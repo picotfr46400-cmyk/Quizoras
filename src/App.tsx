@@ -482,16 +482,23 @@ export default function Quizora() {
   }
  
   async function callGemini(prompt, maxTokens) {
-var resp = await fetch("/api/generate", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxTokens||4000,temperature:0.9}})});
-    var data = await resp.json();
-    var text = data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : "{}";
-    var m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error("no json");
-    var parsed = JSON.parse(m[0]);
-    var qs = Array.isArray(parsed.questions) ? parsed.questions : [];
-    if (qs.length === 0) throw new Error("empty");
-    return qs;
-  }
+  var resp = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: maxTokens || 4000, temperature: 0.9 }
+    })
+  });
+  var data = await resp.json();
+  var text = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : "{}";
+  var m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error("no json");
+  var parsed = JSON.parse(m[0]);
+  var qs = Array.isArray(parsed.questions) ? parsed.questions : [];
+  if (qs.length === 0) throw new Error("empty");
+  return qs;
+}
  
   async function generateQs(dlabel, slabel, count, course) {
     var extra = Math.ceil(count*1.5);
