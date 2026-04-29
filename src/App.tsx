@@ -1586,159 +1586,49 @@ export default function Quizora() {
     });
   }
 
-  async function generateQs(dlabel, slabel, count, course) {
-    // Request more questions than needed so we can filter dupes
-    var extra = Math.ceil(count * 1.5);
-    var n = Math.max(5000, extra * 350);
-
-    if (course) {
-      try {
-        var courseInstr =
-          'Genere exactement ' +
-          extra +
-          ' questions QCM variees et differentes, couvrant des aspects distincts du document. Format JSON uniquement: questions/question/options/correct/explanation';
-        var msgs;
-        if (course.type === 'pdf') {
-          msgs = [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'document',
-                  source: {
-                    type: 'base64',
-                    media_type: 'application/pdf',
-                    data: course.data,
-                  },
-                },
-                { type: 'text', text: courseInstr },
-              ],
-            },
-          ];
-        } else {
-          msgs = [
-            {
-              role: 'user',
-              content: 'Cours:\n\n' + course.data + '\n\n' + courseInstr,
-            },
-          ];
-        }
-        var resp = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: n,
-            messages: msgs,
-          }),
-        });
-        var data = await resp.json();
-        var raw = data.content.find(function (b) {
-          return b.type === 'text';
-        });
-        var text = raw ? raw.text : '{}';
-        var mjson = text.match(/\{[\s\S]*\}/);
-        if (!mjson) throw new Error('no json');
-        var parsed = JSON.parse(mjson[0]);
-        var qs = Array.isArray(parsed.questions) ? parsed.questions : [];
-        if (qs.length === 0) throw new Error('empty');
-        var deduped = dedupQs(qs, []).slice(0, count);
-        return shuffleOpts(deduped);
-      } catch (e) {
-        return shuffleOpts([
-          {
-            question: 'Erreur de generation.',
-            options: ['Ok', 'Annuler', 'Retour', 'Quitter'],
-            correct: 0,
-            explanation: '',
-          },
-        ]);
-      }
+  async function generateQs(dlabel,slabel,count,course){
+    var extra=Math.ceil(count*1.5);
+    var n=Math.max(5000,extra*350);
+    var GEMINI_KEY=import.meta.env.VITE_GEMINI_KEY||"";
+    var GEMINI_URL="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+GEMINI_KEY;
+  
+    async function callGemini(prompt){
+      var resp=await fetch(GEMINI_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:n,temperature:0.9}})});
+      var data=await resp.json();
+      var text=data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]?data.candidates[0].content.parts[0].text:"{}";
+      var m=text.match(/\{[\s\S]*\}/);
+      if(!m)throw new Error("no json");
+      var parsed=JSON.parse(m[0]);
+      var qs=Array.isArray(parsed.questions)?parsed.questions:[];
+      if(qs.length===0)throw new Error("empty");
+      return qs;
     }
-
-    var topic = slabel || dlabel;
-    var histKey = 'qz_hist_' + topic.toLowerCase().replace(/\s/g, '_');
-    var asked = [];
-    try {
-      var hr = await window.storage.get(histKey);
-      if (hr) asked = JSON.parse(hr.value);
-    } catch (e) {}
-
-    // Build a strong avoidance prompt with fingerprints of past questions
-    var avoidList = asked.slice(-40);
-    var avoidHint =
-      avoidList.length > 0
-        ? '\n\nIMPORTANT - Ces questions ont DEJA ete posees, ne les repete PAS:\n' +
-          avoidList
-            .map(function (q, ix) {
-              return ix + 1 + '. ' + q;
-            })
-            .join('\n')
-        : '';
-
-    // Prompt asks for more questions than needed + strong uniqueness constraint
-    var sysPrompt =
-      'Tu es un generateur de quiz educatifs expert. Reponds UNIQUEMENT avec du JSON valide sans backticks. Format: questions/question/options(4 choix)/correct(index 0-3)/explanation. REGLES: 1. Chaque question aborde un aspect DIFFERENT. 2. Pas de doublons ni paraphrases. 3. Types varies: definition, application, cas pratique, calcul, date, mecanisme. 4. Difficulte progressive. Genere exactement ' +
-      extra +
-      ' questions.' +
-      avoidHint;
-    try {
-      var resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: n,
-          system: sysPrompt,
-          messages: [
-            {
-              role: 'user',
-              content:
-                'Genere ' +
-                extra +
-                ' questions variees et originales sur le sujet: ' +
-                topic,
-            },
-          ],
-        }),
-      });
-      var data = await resp.json();
-      var raw = data.content.find(function (b) {
-        return b.type === 'text';
-      });
-      var text = raw ? raw.text : '{}';
-      var m = text.match(/\{[\s\S]*\}/);
-      if (!m) throw new Error('no json');
-      var parsed = JSON.parse(m[0]);
-      var qs = Array.isArray(parsed.questions) ? parsed.questions : [];
-      if (qs.length === 0) throw new Error('empty');
-      // Deduplicate against history AND within batch
-      var deduped = dedupQs(qs, asked).slice(0, count);
-      if (deduped.length < count) {
-        // If not enough after dedup, fill with what we have
-        deduped = dedupQs(qs, []).slice(0, count);
-      }
-      // Save ALL generated questions to history to avoid future repeats
-      var newAsked = asked
-        .concat(
-          qs.map(function (q) {
-            return q.question;
-          })
-        )
-        .slice(-120);
-      try {
-        await window.storage.set(histKey, JSON.stringify(newAsked));
-      } catch (e) {}
+  
+    if(course){
+      try{
+        var coursePrompt="Voici le contenu d'un cours:\n\n"+(course.type==="pdf"?"[Document PDF fourni]":course.data)+"\n\nGenere exactement "+extra+" questions QCM variees basees sur ce contenu. Reponds UNIQUEMENT en JSON valide sans backticks: {\"questions\":[{\"question\":\"...\",\"options\":[\"A\",\"B\",\"C\",\"D\"],\"correct\":0,\"explanation\":\"...\"}]}";
+        var qs=await callGemini(coursePrompt);
+        return shuffleOpts(dedupQs(qs,[]).slice(0,count));
+      }catch(e){return shuffleOpts([{question:"Erreur de generation.",options:["Ok","Annuler","Retour","Quitter"],correct:0,explanation:""}]);}
+    }
+  
+    var topic=slabel||dlabel;
+    var histKey="qz_hist_"+topic.toLowerCase().replace(/\s/g,"_");
+    var asked=[];
+    try{var hr=await window.storage.get(histKey);if(hr)asked=JSON.parse(hr.value);}catch(e){}
+    var avoidHint=asked.length>0?"\n\nIMPORTANT - Ces questions ont DEJA ete posees, ne les repete PAS:\n"+asked.slice(-40).map(function(q,ix){return (ix+1)+". "+q;}).join("\n"):"";
+  
+    var prompt="Tu es un generateur de quiz educatifs expert. Reponds UNIQUEMENT avec du JSON valide sans backticks. Format: {\"questions\":[{\"question\":\"...\",\"options\":[\"A\",\"B\",\"C\",\"D\"],\"correct\":0,\"explanation\":\"...\"}]} REGLES: chaque question aborde un aspect DIFFERENT, pas de doublons, types varies (definition/application/cas pratique), difficulte progressive. Genere exactement "+extra+" questions sur: "+topic+avoidHint;
+  
+    try{
+      var qs=await callGemini(prompt);
+      var deduped=dedupQs(qs,asked).slice(0,count);
+      if(deduped.length<count)deduped=dedupQs(qs,[]).slice(0,count);
+      var newAsked=asked.concat(qs.map(function(q){return q.question;})).slice(-120);
+      try{await window.storage.set(histKey,JSON.stringify(newAsked));}catch(e){}
       return shuffleOpts(deduped);
-    } catch (e) {
-      return shuffleOpts([
-        {
-          question: 'Quelle est la capitale de la France ?',
-          options: ['Lyon', 'Paris', 'Marseille', 'Bordeaux'],
-          correct: 1,
-          explanation: 'Paris.',
-        },
-      ]);
+    }catch(e){
+      return shuffleOpts([{question:"Quelle est la capitale de la France ?",options:["Lyon","Paris","Marseille","Bordeaux"],correct:1,explanation:"Paris."}]);
     }
   }
 
