@@ -8,9 +8,9 @@ window.storage = {
   async delete(k, sh) { var key = (sh ? "sh_" : "") + k; delete this._d[key]; this._s(); return { key: k, deleted: true }; },
   async list(prefix, sh) { var p = (sh ? "sh_" : "") + (prefix || ""); var keys = Object.keys(this._d).filter(function(x) { return x.startsWith(p); }).map(function(x) { return sh ? x.replace("sh_", "") : x; }); return { keys }; }
 };
-
+ 
 import { useState, useEffect, useRef } from "react";
-
+ 
 var C = {
   bg: "#f4f4f8", surface: "#fff", border: "#e2e2ec",
   accent: "#6c63ff", accentLight: "#5046e5", gold: "#d97706",
@@ -18,7 +18,7 @@ var C = {
   success: "#16a34a", danger: "#dc2626", warn: "#d97706",
   shadow: "0 1px 4px rgba(100,100,160,0.08)"
 };
-
+ 
 var COUNTRIES = ["France","Belgique","Suisse","Canada","Maroc","Algerie","Tunisie","Senegal","autre"];
 var FLAGS = { "France":"🇫🇷","Belgique":"🇧🇪","Suisse":"🇨🇭","Canada":"🇨🇦","Maroc":"🇲🇦","Algerie":"🇩🇿","Tunisie":"🇹🇳","Senegal":"🇸🇳","autre":"🌍" };
 var BOTS = ["NovaMind","ByteWiz","Aria","Zephyr","Orion","Luna","Atlas","Pixel"];
@@ -63,7 +63,7 @@ var AVATARS = [
   "🦄","🐲","👾","🤖","👻","🎃","🧙","🧛",
   "🚀","⚡","🔥","💎","🌟","🎯","🏆","🎮",
 ];
-
+ 
 function genFriendCode(name) {
   var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   var hash = 0;
@@ -72,9 +72,9 @@ function genFriendCode(name) {
   for (var j = 0; j < 6; j++) { code += chars[hash % chars.length]; hash = Math.floor(hash / chars.length) + j * 7; }
   return code.slice(0, 6);
 }
-
+ 
 function todayKey() { return new Date().toISOString().slice(0, 10); }
-
+ 
 // ── CLASSROOM SCENE ──────────────────────────────────────────────────
 function ClassroomScene({ question, players, timer, score, onAnswer, answered, selected, currentQ, totalQ, roomCode }) {
   var opts = question && question.options ? question.options : [];
@@ -175,7 +175,7 @@ function ClassroomScene({ question, players, timer, score, onAnswer, answered, s
     </div>
   );
 }
-
+ 
 // ── UI COMPONENTS ─────────────────────────────────────────────────────
 var Ad = function() {
   return (
@@ -185,7 +185,7 @@ var Ad = function() {
     </div>
   );
 };
-
+ 
 var Logo = function(props) {
   var size = props.size || 28;
   return (
@@ -195,7 +195,7 @@ var Logo = function(props) {
     </div>
   );
 };
-
+ 
 function Btn(props) {
   var v = props.variant || "primary", d = props.disabled, s = props.style || {};
   var base = {padding:"12px 24px",borderRadius:10,border:"none",cursor:d?"not-allowed":"pointer",fontSize:15,fontWeight:600,transition:"all 0.15s",opacity:d?0.4:1};
@@ -208,11 +208,11 @@ function Btn(props) {
   else if (v === "tab") extra = {padding:"8px 16px",fontSize:13,background:d?"rgba(108,99,255,0.12)":"transparent",color:d?C.accent:C.muted,border:"1.5px solid "+(d?"rgba(108,99,255,0.5)":C.border),borderRadius:20};
   return <button onClick={props.onClick} disabled={d} style={Object.assign({},base,extra,s)}>{props.children}</button>;
 }
-
+ 
 function Inp(props) {
   return <input type={props.type||"text"} value={props.value} onChange={function(e){props.onChange(e.target.value);}} placeholder={props.placeholder} style={Object.assign({},{background:C.surface,border:"1.5px solid "+C.border,borderRadius:10,padding:"12px 16px",color:C.text,fontSize:15,width:"100%",outline:"none",boxSizing:"border-box"},props.style||{})}/>;
 }
-
+ 
 function Av(props) {
   var size = props.size || 32, isUser = props.isUser, country = props.country, photo = props.photo, emoji = props.emoji;
   return (
@@ -227,11 +227,11 @@ function Av(props) {
     </div>
   );
 }
-
+ 
 function Tag(props) {
   return <div onClick={props.onClick} style={{padding:"6px 14px",borderRadius:20,fontSize:13,cursor:"pointer",background:props.active?"rgba(108,99,255,0.1)":C.bg,border:"1.5px solid "+(props.active?C.accent:C.border),color:props.active?C.accent:C.muted,fontWeight:props.active?600:400,transition:"all 0.15s"}}>{props.children}</div>;
 }
-
+ 
 // ── MAIN COMPONENT ────────────────────────────────────────────────────
 export default function Quizora() {
   var [screen,setScreen]=useState("splash");
@@ -301,9 +301,9 @@ export default function Quizora() {
   var qRef = useRef([]);
   var scoreRef = useRef(0);
   var timerRef = useRef(null);
-
+ 
   useEffect(function(){ loadUser(); }, []);
-
+ 
   async function loadUser() {
     try {
       var r = await window.storage.get("qz_user");
@@ -330,14 +330,14 @@ export default function Quizora() {
       } else { setScreen("auth"); }
     } catch(e) { setScreen("auth"); }
   }
-
+ 
   async function saveUser(u) {
     await window.storage.set("qz_user", JSON.stringify(u));
     setUser(u); setFriends(u.friends||[]);
   }
-
+ 
   function isEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
-
+ 
   async function handleAuth() {
     setAuthError("");
     if (authMode === "register") {
@@ -364,15 +364,15 @@ export default function Quizora() {
       await saveUser(eu); setScreen("home");
     }
   }
-
+ 
   async function logout() { await window.storage.delete("qz_user"); setUser(null); setScreen("auth"); }
-
+ 
   async function saveScore(finalScore) {
     if (!user || courseMode) return;
     var entry = {name:user.name,country:user.country,score:finalScore,domain:sub||(domain?domain.label:"?"),date:todayKey(),ts:Date.now()};
     await window.storage.set("qz_score_"+todayKey()+"_"+user.name+"_"+Date.now(),JSON.stringify(entry),true);
   }
-
+ 
   async function loadLb() {
     setLoading(true);
     try {
@@ -386,7 +386,7 @@ export default function Quizora() {
     } catch(e) {}
     setLoading(false);
   }
-
+ 
   function filteredLb() {
     var list = lb;
     if (lbFilter === "france") list = list.filter(function(e){return e.country==="France";});
@@ -397,7 +397,7 @@ export default function Quizora() {
     list.forEach(function(e){var k=e.name.toLowerCase();if(!map[k])map[k]={name:e.name,country:e.country,score:0,domains:[]};map[k].score+=e.score;if(map[k].domains.indexOf(e.domain)<0)map[k].domains.push(e.domain);});
     return Object.values(map).sort(function(a,b){return b.score-a.score;});
   }
-
+ 
   async function addFriend() {
     if (!friendIn.trim()) return;
     var code = friendIn.trim().toUpperCase();
@@ -418,21 +418,21 @@ export default function Quizora() {
     setFriendIn("");
     setTimeout(function(){setFriendMsg("");},2500);
   }
-
+ 
   async function buyTheme(tid,price) {
     if (coins < price) return;
     var nc = coins-price; var np = purchased.concat([tid]);
     setCoins(nc); setPurchased(np);
     await saveUser(Object.assign({},user,{coins:nc,purchased:np}));
   }
-
+ 
   async function addCoins(amount) {
     var nc = coins+amount; setCoins(nc);
     await saveUser(Object.assign({},user,{coins:nc}));
   }
-
+ 
   function genCode() { return Math.random().toString(36).slice(2,7).toUpperCase(); }
-
+ 
   function startLobby() {
     var code = genCode(); setRoomCode(code);
     var uname = user ? user.name : "Toi";
@@ -452,13 +452,13 @@ export default function Quizora() {
       delay += 350;
     });
   }
-
+ 
   function fisherYates(arr) {
     var a = arr.slice();
     for (var i = a.length-1; i > 0; i--) { var j = Math.floor(Math.random()*(i+1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
     return a;
   }
-
+ 
   function shuffleOpts(qs) {
     return qs.map(function(q){
       var correct = q.options[q.correct];
@@ -466,9 +466,9 @@ export default function Quizora() {
       return Object.assign({},q,{options:shuffled,correct:shuffled.indexOf(correct)});
     });
   }
-
+ 
   function normQ(s) { return s.toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,60); }
-
+ 
   function dedupQs(qs, asked) {
     var seen = new Set();
     asked.forEach(function(q){ seen.add(normQ(q)); });
@@ -480,7 +480,7 @@ export default function Quizora() {
       return true;
     });
   }
-
+ 
   async function callGemini(prompt, maxTokens) {
     var KEY = (typeof import_meta_env !== "undefined" && import_meta_env.VITE_GEMINI_KEY) || (typeof window !== "undefined" && window.__GEMINI_KEY__) || "";
     try { KEY = import.meta.env.VITE_GEMINI_KEY || ""; } catch(e) {}
@@ -495,7 +495,7 @@ export default function Quizora() {
     if (qs.length === 0) throw new Error("empty");
     return qs;
   }
-
+ 
   async function generateQs(dlabel, slabel, count, course) {
     var extra = Math.ceil(count*1.5);
     var n = Math.max(4000, extra*350);
@@ -523,7 +523,7 @@ export default function Quizora() {
       return shuffleOpts([{question:"Quelle est la capitale de la France ?",options:["Lyon","Paris","Marseille","Bordeaux"],correct:1,explanation:"Paris."}]);
     }
   }
-
+ 
   async function launchQuiz() {
     setScreen("loading");
     var qs = await generateQs(domain?domain.label:"",sub,qCount,courseMode?courseContent:null);
@@ -532,7 +532,7 @@ export default function Quizora() {
     setQIdx(0); setScore(0); setAnswered(false); setSel(null);
     setScreen("quiz");
   }
-
+ 
   useEffect(function(){
     if (screen !== "quiz" || answered || qRef.current.length === 0) return;
     setTimer(20); clearInterval(timerRef.current);
@@ -544,7 +544,7 @@ export default function Quizora() {
     }, 1000);
     return function(){ clearInterval(timerRef.current); };
   }, [qIdx, screen]);
-
+ 
   function handleAnswer(idx) {
     if (answered) return;
     clearInterval(timerRef.current);
@@ -581,7 +581,7 @@ export default function Quizora() {
       }
     }, 1800);
   }
-
+ 
   async function submitIdea() {
     if (!ideaTitle.trim()||!ideaDesc.trim()) return;
     setIdeaLoading(true);
@@ -589,7 +589,7 @@ export default function Quizora() {
     try { await window.storage.set("qz_idea_"+Date.now()+"_"+Math.random().toString(36).slice(2,5),JSON.stringify(idea),true); setIdeaOk(true); setIdeaTitle(""); setIdeaDesc(""); } catch(e) {}
     setIdeaLoading(false);
   }
-
+ 
   async function loadAdminIdeas() {
     setAdminLoading(true);
     try {
@@ -602,7 +602,7 @@ export default function Quizora() {
     } catch(e) {}
     setAdminLoading(false);
   }
-
+ 
   async function handleFile(file, isTeacher) {
     var setErr = isTeacher ? setTeacherUpErr : setUpErr;
     var setLoadingF = isTeacher ? setTeacherUpLoading : setUpLoading;
@@ -632,7 +632,7 @@ export default function Quizora() {
     } catch(e) { setErr("Erreur de lecture."); }
     setLoadingF(false);
   }
-
+ 
   async function generateExam() {
     if (!teacherCourse) return;
     setExamLoading(true);
@@ -654,7 +654,7 @@ export default function Quizora() {
     } catch(e) { setExamData({titre:"Erreur",consignes:"Impossible de generer. Verifie ta cle API.",sections:[]}); setScreen("exam_editor"); }
     setExamLoading(false);
   }
-
+ 
   function exportPDF() {
     var loadJsPDF = function(){return new Promise(function(res,rej){if(window.jspdf){res(window.jspdf.jsPDF);return;}var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";s.onload=function(){res(window.jspdf.jsPDF);};s.onerror=rej;document.head.appendChild(s);});};
     loadJsPDF().then(function(JsPDF){
@@ -684,17 +684,17 @@ export default function Quizora() {
       doc.save((d.titre||"sujet")+".pdf");
     });
   }
-
+ 
   var sorted = playersState.slice().sort(function(a,b){return b.score-a.score;});
   var rankColor = function(i){return [C.gold,C.silver,C.bronze][i]||C.muted;};
   var wrap = {maxWidth:520,margin:"0 auto",padding:"24px 20px"};
   var card = {background:C.surface,borderRadius:16,border:"1.5px solid "+C.border,padding:24,boxShadow:C.shadow};
   var root = {background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'Outfit','Segoe UI',sans-serif"};
-
+ 
   // ── SCREENS ───────────────────────────────────────────────────────
-
+ 
   if (screen === "splash") return <div style={Object.assign({},root,{display:"flex",alignItems:"center",justifyContent:"center"})}><Logo size={40}/></div>;
-
+ 
   if (screen === "auth") return (
     <div style={root}>
       <div style={Object.assign({},wrap,{paddingTop:60})}>
@@ -724,7 +724,7 @@ export default function Quizora() {
       </div>
     </div>
   );
-
+ 
   if (screen === "home") return (
     <div style={root}>
       <div style={wrap}>
@@ -771,7 +771,7 @@ export default function Quizora() {
       </div>
     </div>
   );
-
+ 
   if (screen === "profile") return (
     <div style={root}>
       <div style={wrap}>
@@ -860,7 +860,7 @@ export default function Quizora() {
       </div>
     </div>
   );
-
+ 
   if (screen === "shop") return (
     <div style={root}>
       <div style={wrap}>
@@ -913,7 +913,7 @@ export default function Quizora() {
       </div>
     </div>
   );
-
+ 
   if (screen === "leaderboard") return (
     <div style={root}>
       <div style={wrap}>
@@ -957,7 +957,7 @@ export default function Quizora() {
       </div>
     </div>
   );
-
+ 
   if (screen === "friends") return (
     <div style={root}>
       <div style={wrap}>
@@ -988,7 +988,7 @@ export default function Quizora() {
       </div>
     </div>
   );
-
+ 
   if (screen === "upload") return (
     <div style={root}>
       <div style={wrap}>
@@ -1045,7 +1045,7 @@ export default function Quizora() {
       </div>
     </div>
   );
-
+ 
   if (screen === "teacher") return (
     <div style={root}>
       <div style={wrap}>
@@ -1114,7 +1114,7 @@ export default function Quizora() {
       </div>
     </div>
   );
-
+ 
   if (screen === "exam_editor" && examData) {
     return (
       <div style={root}>
@@ -1168,7 +1168,7 @@ export default function Quizora() {
       </div>
     );
   }
-
+ 
   if (screen === "ideas") {
     var cats = ["fonctionnalite","bug","design","contenu","autre"];
     var catCols = {fonctionnalite:C.accent,bug:C.danger,design:C.gold,contenu:C.success,autre:C.muted};
@@ -1215,7 +1215,7 @@ export default function Quizora() {
       </div>
     );
   }
-
+ 
   if (screen === "admin") {
     var catCols2 = {fonctionnalite:C.accent,bug:C.danger,design:C.gold,contenu:C.success,autre:C.muted};
     function renderIdeas() {
@@ -1264,7 +1264,7 @@ export default function Quizora() {
       </div>
     );
   }
-
+ 
   if (screen === "setup") return (
     <div style={root}>
       <div style={wrap}>
@@ -1326,7 +1326,7 @@ export default function Quizora() {
       </div>
     </div>
   );
-
+ 
   if (screen === "lobby") {
     var joinedCount = lobby.filter(function(p){return p.joined;}).length;
     return (
@@ -1386,7 +1386,7 @@ export default function Quizora() {
       </div>
     );
   }
-
+ 
   if (screen === "loading") return (
     <div style={Object.assign({},root,{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"})}>
       <Logo size={40}/>
@@ -1397,7 +1397,7 @@ export default function Quizora() {
       <style>{"@keyframes dot{0%,100%{opacity:0.2}50%{opacity:1}}"}</style>
     </div>
   );
-
+ 
   if (screen === "quiz" && qRef.current.length > 0) {
     var q = qRef.current[qIdx];
     var totalQ = qRef.current.length;
@@ -1450,7 +1450,7 @@ export default function Quizora() {
       </div>
     );
   }
-
+ 
   if (screen === "results") return (
     <div style={root}>
       <div style={wrap}>
@@ -1500,6 +1500,6 @@ export default function Quizora() {
       </div>
     </div>
   );
-
+ 
   return <div style={Object.assign({},root,{display:"flex",alignItems:"center",justifyContent:"center"})}><Logo size={36}/></div>;
 }
