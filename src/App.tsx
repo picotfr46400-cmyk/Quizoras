@@ -482,11 +482,7 @@ export default function Quizora() {
   }
  
   async function callGemini(prompt, maxTokens) {
-    var KEY = (typeof import_meta_env !== "undefined" && import_meta_env.VITE_GEMINI_KEY) || (typeof window !== "undefined" && window.__GEMINI_KEY__) || "";
-    try { KEY = import.meta.env.VITE_GEMINI_KEY || ""; } catch(e) {}
-    var URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+KEY;
-    var resp = await fetch(URL, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxTokens||4000,temperature:0.9}})});
-    var data = await resp.json();
+var resp = await fetch("/api/generate", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:maxTokens||4000,temperature:0.9}})});
     var text = data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : "{}";
     var m = text.match(/\{[\s\S]*\}/);
     if (!m) throw new Error("no json");
